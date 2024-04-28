@@ -1,0 +1,13 @@
+[package]
+name = "archive_dl"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+byteorder = "1.4"
+reqwest = "0.12"
+hex = "0.4"
+tokio = { version = "1.37", features = ["rt-multi-thread", "macros"] }
+async-recursion = "1.1"
