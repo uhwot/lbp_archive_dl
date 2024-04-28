@@ -15,8 +15,6 @@ enum ResrcMethod {
     Binary {
         is_encrypted: bool,
         dependencies: Vec<ResrcDependency>,
-        compression_flags: u8,
-        is_compressed: bool,
     },
 }
 
@@ -77,18 +75,9 @@ impl ResrcId {
                 let _revision = file.read_u32::<BigEndian>().unwrap();
                 let dependencies = ResrcDependency::parse_table(file);
 
-                if &resrc_type != b"SMH" {
-                    let _branch_id = file.read_u16::<BigEndian>().unwrap();
-                    let _branch_rev = file.read_u16::<BigEndian>().unwrap();
-
-                    ResrcMethod::Binary {
-                        is_encrypted: method == b'e',
-                        dependencies,
-                        compression_flags: file.read_u8().unwrap(),
-                        is_compressed: file.read_u8().unwrap() == 1,
-                    }
-                } else {
-                    panic!("static mesh shit not implemented yet, bruh moment");
+                ResrcMethod::Binary {
+                    is_encrypted: method == b'e',
+                    dependencies,
                 }
             },
             _ => { /* shit which isn't implemented yet i guess lol */ ResrcMethod::Null },
@@ -126,7 +115,7 @@ async fn download_res(sha1: &[u8; 20], out_dir: &Path, is_rootlvl: bool, client:
     let mut file = File::open(path).unwrap();
 
     let resrc_id = ResrcId::new(&mut file);
-    if let ResrcMethod::Binary { is_encrypted: _, dependencies, compression_flags: _, is_compressed: _ } = resrc_id.method {
+    if let ResrcMethod::Binary { is_encrypted: _, dependencies } = resrc_id.method {
         for ResrcDependency { dep_type, resrc_type: _ } in dependencies {
             if let ResrcDependencyType::Sha1(sha1) = dep_type {
                 download_res(&sha1, out_dir, false, client).await;
