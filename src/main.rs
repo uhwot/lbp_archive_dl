@@ -40,6 +40,10 @@ impl ResrcDependency {
         let mut dependencies = vec![];
         for _ in 0..file.read_u32::<BigEndian>().unwrap() {
             let dep_type = match file.read_u8().unwrap() {
+                0 => { // lbp3 dynamic thermometer levels use this??? why??????
+                    file.seek(SeekFrom::Current(4)).unwrap(); // resrc_type
+                    continue;
+                }, 
                 1 => {
                     let mut sha1 = [0u8; 20];
                     file.read_exact(&mut sha1).unwrap();
@@ -72,8 +76,11 @@ impl ResrcId {
 
         let method = match method {
             b'b' | b'e' => {
-                let _revision = file.read_u32::<BigEndian>().unwrap();
-                let dependencies = ResrcDependency::parse_table(file);
+                let revision = file.read_u32::<BigEndian>().unwrap();
+                let dependencies = match revision >= 0x109 {
+                    true => ResrcDependency::parse_table(file),
+                    false => vec![],
+                };
 
                 ResrcMethod::Binary {
                     is_encrypted: method == b'e',
