@@ -1,7 +1,8 @@
-use std::{env::args, fs::{self, File}, io::{Read, Seek, SeekFrom, Write}, path::Path, vec};
+use std::{env::args, fs::{self, File}, io::{self, Read, Seek, SeekFrom, Write}, path::Path, vec};
 use byteorder::{ReadBytesExt, BigEndian};
 use async_recursion::async_recursion;
 use reqwest::Client;
+use sha1::{Digest, Sha1};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 struct ResrcId {
@@ -97,35 +98,55 @@ impl ResrcId {
     }
 }
 
+async fn download_res(sha1: &str, path: &str, client: &mut Client) {
+    let mut file = File::create(&path).unwrap();
+    println!("Downloading {sha1}...");
+
+    let url = format!("https://archive.org/download/dry23r{}/dry{}.zip/{}%2F{}%2F{}", sha1.chars().next().unwrap(), &sha1[..2], &sha1[..2], &sha1[2..4], sha1);
+
+    let mut resp = client.get(url).send().await.unwrap();
+
+    if resp.status() != 200 {
+        panic!("Resource download {sha1} failed with HTTP status code {}", resp.status());
+    }
+
+    while let Some(chunk) = resp.chunk().await.unwrap() {
+        file.write_all(&chunk).unwrap();
+    }
+}
+
 #[async_recursion]
-async fn download_res(sha1: &[u8; 20], out_dir: &Path, is_rootlvl: bool, client: &mut Client) {
-    let sha1 = hex::encode(sha1);
+async fn get_resource(sha1_bytes: &[u8; 20], out_dir: &Path, is_rootlvl: bool, client: &mut Client) {
+    let sha1 = hex::encode(sha1_bytes);
     let sha1 = sha1.as_str();
     let path = match is_rootlvl {
         true => format!("{}/lvl.bin", out_dir.to_str().unwrap()),
         false => format!("{}/{}", out_dir.to_str().unwrap(), sha1),
     };
 
-    {
-        let mut file = File::create(&path).unwrap();
-        println!("Downloading {sha1}...");
+    if Path::exists(Path::new(&path)) {
+        let mut hasher = Sha1::new();
+        let mut file = File::open(&path).unwrap();
 
-        let url = format!("https://archive.org/download/dry23r{}/dry{}.zip/{}%2F{}%2F{}", sha1.chars().next().unwrap(), &sha1[..2], &sha1[..2], &sha1[2..4], sha1);
+        io::copy(&mut file, &mut hasher).unwrap();
+        let file_hash = hasher.finalize();
 
-        let mut resp = client.get(url).send().await.unwrap();
-
-        while let Some(chunk) = resp.chunk().await.unwrap() {
-            file.write_all(&chunk).unwrap();
+        if *sha1_bytes == *file_hash {
+            println!("Resource {sha1} already downloaded!");
+        } else {
+            download_res(sha1, &path, client).await;
         }
+    } else {
+        download_res(sha1, &path, client).await;
     }
-    
+
     let mut file = File::open(path).unwrap();
 
     let resrc_id = ResrcId::new(&mut file);
     if let ResrcMethod::Binary { is_encrypted: _, dependencies } = resrc_id.method {
         for ResrcDependency { dep_type, resrc_type: _ } in dependencies {
             if let ResrcDependencyType::Sha1(sha1) = dep_type {
-                download_res(&sha1, out_dir, false, client).await;
+                get_resource(&sha1, out_dir, false, client).await;
             }
         }
     }
@@ -147,5 +168,5 @@ async fn main() {
 
     let mut client = Client::new();
 
-    download_res(&sha1, out_dir, true, &mut client).await;
+    get_resource(&sha1, out_dir, true, &mut client).await;
 }
