@@ -98,8 +98,7 @@ impl ResrcId {
     }
 }
 
-async fn download_res(sha1: &str, path: &str, client: &mut Client) {
-    let mut file = File::create(&path).unwrap();
+async fn download_res(sha1: &str, path: &str, client: &mut Client) -> Result<(), ()> {
     println!("Downloading {sha1}...");
 
     let url = format!("https://archive.org/download/dry23r{}/dry{}.zip/{}%2F{}%2F{}", sha1.chars().next().unwrap(), &sha1[..2], &sha1[..2], &sha1[2..4], sha1);
@@ -107,12 +106,17 @@ async fn download_res(sha1: &str, path: &str, client: &mut Client) {
     let mut resp = client.get(url).send().await.unwrap();
 
     if resp.status() != 200 {
-        panic!("Resource download {sha1} failed with HTTP status code {}", resp.status());
+        println!("Resource download {sha1} failed with HTTP status code {}, skipping...", resp.status());
+        return Err(())
     }
+
+    let mut file = File::create(&path).unwrap();
 
     while let Some(chunk) = resp.chunk().await.unwrap() {
         file.write_all(&chunk).unwrap();
     }
+
+    Ok(())
 }
 
 #[async_recursion]
@@ -134,10 +138,14 @@ async fn get_resource(sha1_bytes: &[u8; 20], out_dir: &Path, is_rootlvl: bool, c
         if *sha1_bytes == *file_hash {
             println!("Resource {sha1} already downloaded!");
         } else {
-            download_res(sha1, &path, client).await;
+            if let Err(()) = download_res(sha1, &path, client).await {
+                return
+            }
         }
     } else {
-        download_res(sha1, &path, client).await;
+        if let Err(()) = download_res(sha1, &path, client).await {
+            return
+        }
     }
 
     let mut file = File::open(path).unwrap();
