@@ -101,13 +101,19 @@ impl ResrcId {
 async fn download_res(sha1: &str, path: &str, client: &mut Client) -> Result<(), ()> {
     println!("Downloading {sha1}...");
 
-    let url = format!("https://archive.org/download/dry23r{}/dry{}.zip/{}%2F{}%2F{}", sha1.chars().next().unwrap(), &sha1[..2], &sha1[..2], &sha1[2..4], sha1);
-
+    let mut url = format!("https://lbp.littlebigrefresh.com/api/v3/assets/{}/download", sha1);
     let mut resp = client.get(url).send().await.unwrap();
-
+    
     if resp.status() != 200 {
-        println!("Resource download {sha1} failed with HTTP status code {}, skipping...", resp.status());
-        return Err(())
+        println!("Resource download {sha1} failed with HTTP status code {}, trying from archive.org...", resp.status());
+
+        url = format!("https://archive.org/download/dry23r{}/dry{}.zip/{}%2F{}%2F{}", sha1.chars().next().unwrap(), &sha1[..2], &sha1[..2], &sha1[2..4], sha1);
+        resp = client.get(url).send().await.unwrap();
+
+        if resp.status() != 200 {
+            println!("Resource download {sha1} failed with HTTP status code {}, skipping...", resp.status());
+            return Err(())
+        }
     }
 
     let mut file = File::create(&path).unwrap();
