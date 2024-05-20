@@ -1,6 +1,6 @@
 [package]
 name = "archive_dl"
-version = "0.1.0"
+version = "2.0.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -12,3 +12,11 @@ hex = "0.4"
 tokio = { version = "1.37", features = ["rt-multi-thread", "macros"] }
 async-recursion = "1.1"
 sha1 = "0.10"
+sqlite = "0.36"
+hmac = "0.12"
+aes = "0.8"
+cbc = "0.1"
+bitvec = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"

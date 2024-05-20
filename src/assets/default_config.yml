@@ -1,0 +1,20 @@
+# Database file path
+# Download from this link: https://archive.org/download/dry23db
+database_path: "dry.db"
+
+# Directory where level backups are stored
+# For your convenience:
+# - If on RPCS3, set this to (RPCS3 directory)/dev_hdd0/home/00000001/savedata
+# - If on PS3, set this to PS3/SAVEDATA on your USB stick
+backup_directory: "backups"
+
+# Server where level resources are downloaded from
+# Values are:
+# - "refresh" (https://lbp.littlebigrefresh.com/)
+# - "archive" (https://archive.org/details/@tamiya99)
+download_server: "refresh"
+
+# Whether the backup version is determined based on the level format
+# For example, LBP1/2 levels in LBP3 format will be written as LBP3 backups
+# Set this to false only if you want to backport levels!
+fix_backup_version: true
