@@ -82,7 +82,11 @@ pub struct SlotInfo {
 }
 
 pub fn get_slot_info(id: i64, db_path: &Path) -> SlotInfo {
-    let db = sqlite::open(db_path).expect("Couldn't open database, is it missing?");
+    if !db_path.exists() {
+        panic!("Database file is missing, download it or check if the path in config.yml is correct");
+    }
+
+    let db = sqlite::open(db_path).unwrap();
 
     let query = "SELECT name, description, npHandle, rootLevel, icon, game, initiallyLocked,
         isSubLevel, background, shareable, authorLabels, leveltype, minPlayers, maxPlayers, isAdventurePlanet
