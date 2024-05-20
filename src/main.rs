@@ -74,6 +74,10 @@ async fn dl_as_backup(level_id: i64, config: Config) {
         get_resource(&icon_hash, &mut client, &mut hashes, &mut dl_count, &mut fail_count, &config.download_server).await;
     }
 
+    if let None = hashes.get(&slot_info.root_level).unwrap() {
+        panic!("rootLevel is missing from the archive, rip");
+    }
+
     println!("Done!");
     println!("{dl_count} resources downloaded, {fail_count} failed");
 
