@@ -79,11 +79,11 @@ pub fn make_sfo(slot_info: &SlotInfo, bkp_name: &str, dir: &Path, gamever: &Game
         },
         IndexEntry {
             key: "PARAMS",
-            data: DataFormat::Array(1024, b"\0")
+            data: DataFormat::Array(1024, &[0u8; 1024])
         },
         IndexEntry {
             key: "PARAMS2",
-            data: DataFormat::Array(1024, b"\0")
+            data: DataFormat::Array(1024, &[0u8; 12])
         },
         IndexEntry {
             key: "SAVEDATA_DIRECTORY",
