@@ -41,13 +41,13 @@ pub fn make_pfd(version: u64, sfo: Vec<u8>, dir: &Path) {
     let mut pf_entries = Vec::new();
     pf_entries.write_u64::<BigEndian>(pf_index_size).unwrap();
     pf_entries.write_all(&sfo_filename).unwrap();
-    pf_entries.write_all(&b"\0".repeat(7)).unwrap(); // padding
-    pf_entries.write_all(&b"\0".repeat(64)).unwrap(); // file encryption key
+    pf_entries.write_all(&[0u8; 7]).unwrap(); // padding
+    pf_entries.write_all(&[0u8; 64]).unwrap(); // file encryption key
     pf_entries.write_all(hmac_digest(&SAVEGAME_PARAM_SFO_KEY, &sfo).as_slice()).unwrap();
-    pf_entries.write_all(&b"\0".repeat(20)).unwrap(); // console id hash
-    pf_entries.write_all(&b"\0".repeat(20)).unwrap(); // disc key hash
-    pf_entries.write_all(&b"\0".repeat(20)).unwrap(); // account id hash
-    pf_entries.write_all(&b"\0".repeat(40)).unwrap(); // reserved
+    pf_entries.write_all(&[0u8; 20]).unwrap(); // console id hash
+    pf_entries.write_all(&[0u8; 20]).unwrap(); // disc key hash
+    pf_entries.write_all(&[0u8; 20]).unwrap(); // account id hash
+    pf_entries.write_all(&[0u8; 40]).unwrap(); // reserved
     pf_entries.write_u64::<BigEndian>(sfo.len() as u64).unwrap();
 
     // protected file index

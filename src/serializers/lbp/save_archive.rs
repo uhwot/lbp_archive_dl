@@ -57,12 +57,12 @@ pub fn make_savearchive(rev: &ResrcRevision, slt_hash: [u8; 20], hashes: BTreeMa
     arc.write_u16::<BigEndian>(rev.branch_id).unwrap();
     arc.write_u16::<BigEndian>(rev.branch_revision).unwrap();
     arc.write_u32::<BigEndian>(1).unwrap(); // localUserID
-    arc.write_all(&b"\0".repeat(0x4 * 0xa)).unwrap(); // deprecated1 int[10]
+    arc.write_all(&[0u8; 0x4 * 0xa]).unwrap(); // deprecated1 int[10]
     arc.write_u32::<BigEndian>(0).unwrap(); // copied
     arc.write_u32::<BigEndian>(29).unwrap(); // root type value, SLOT_LIST
-    arc.write_all(&b"\0".repeat(0x4 * 0x3)).unwrap(); // deprecated2 int[3]
+    arc.write_all(&[0u8; 0x4 * 0x3]).unwrap(); // deprecated2 int[3]
     arc.write_all(&slt_hash).unwrap();
-    arc.write_all(&b"\0".repeat(0x4 * 0xa)).unwrap(); // deprecated3 int[10]
+    arc.write_all(&[0u8; 0x4 * 0xa]).unwrap(); // deprecated3 int[10]
 
     // fat entries
     for entry in &entries {
@@ -73,7 +73,7 @@ pub fn make_savearchive(rev: &ResrcRevision, slt_hash: [u8; 20], hashes: BTreeMa
 
     // hashinate, to be written later
     let hashinate_offset = arc.len();
-    arc.write_all(&b"\0".repeat(0x14)).unwrap();
+    arc.write_all(&[0u8; 0x14]).unwrap();
     arc.write_u32::<BigEndian>(entries.len() as u32).unwrap();
     arc.write_all(b"FAR4").unwrap();
 
