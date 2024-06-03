@@ -32,11 +32,11 @@ impl Config {
         let config_path = Path::new("config.yml");
         if !config_path.exists() {
             println!("config.yml is missing, writing default config");
-            let mut new_file = File::create(&config_path).unwrap();
+            let mut new_file = File::create(config_path).unwrap();
             new_file.write_all(include_bytes!("assets/default_config.yml")).unwrap();
         }
 
-        let file = File::open(&config_path).expect("Couldn't open config file");
+        let file = File::open(config_path).expect("Couldn't open config file");
         let config: Self = serde_yaml::from_reader(file).expect("Couldn't parse config");
         config
     }
