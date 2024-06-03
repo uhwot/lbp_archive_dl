@@ -85,3 +85,52 @@ pub const LABEL_LAMS_KEY_IDS: [u32; 85] = [
     1757127225, // LABEL_TOGGLE
     18376828,   // LABEL_ODDSOCK
 ];
+
+pub const LBP2_LABELS: [u32; 46] = [
+    3303684648, // LABEL_SinglePlayer
+    2226674031, // LABEL_Multiplayer
+    1592999870, // LABEL_Quick
+    2700064317, // LABEL_Long
+    3479991161, // LABEL_Challenging
+    865390335,  // LABEL_Easy
+    1912725701, // LABEL_Scary
+    333755687,  // LABEL_Funny
+    2385972320, // LABEL_Artistic
+    4225633869, // LABEL_Musical
+    3163420866, // LABEL_Intricate
+    2691519582, // LABEL_Cinematic
+    904533252,  // LABEL_Competitive
+    1833739742, // LABEL_Fighter
+    2179604327, // LABEL_Gallery
+    2779738683, // LABEL_Puzzle
+    28395166,   // LABEL_Platform
+    3378882312, // LABEL_Race
+    2317154565, // LABEL_Shooter
+    3579486214, // LABEL_Sports
+    1993702134, // LABEL_Story
+    2247604394, // LABEL_Strategy
+    3271049114, // LABEL_SurvivalChallenge
+    2662974919, // LABEL_Tutorial
+    4229690971, // LABEL_Retro
+    1101533394, // LABEL_Collectables
+    146917693,  // LABEL_DirectControl
+    2833977283, // LABEL_Explosives
+    1096359188, // LABEL_Glitch
+    2632488324, // LABEL_GrapplingHook
+    1537720983, // LABEL_JumpPads
+    724334842,  // LABEL_MagicBag
+    1777723635, // LABEL_LowGravity
+    241346234,  // LABEL_Paintinator
+    420456097,  // LABEL_PowerGlove
+    433052663,  // LABEL_Sackbots
+    2562201470, // LABEL_Vehicles
+    3617484712, // LABEL_Water
+    1035974897, // LABEL_Brain_Crane
+    3743705536, // LABEL_Movinator
+    2811622403, // LABEL_Paint
+    3283435357, // LABEL_ATTRACT_GEL
+    1552300143, // LABEL_ATTRACT_TWEAK
+    1843952524, // LABEL_HEROCAPE
+    2941059832, // LABEL_MEMORISER
+    3047171809, // LABEL_WALLJUMP
+];

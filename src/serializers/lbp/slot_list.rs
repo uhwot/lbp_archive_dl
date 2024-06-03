@@ -2,7 +2,7 @@ use std::io::Write;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
-use crate::{db::{LevelType, SlotInfo}, resource_parse::ResrcRevision, ResrcDescriptor};
+use crate::{db::{GameVersion, LevelType, SlotInfo}, labels::LBP2_LABELS, resource_parse::ResrcRevision, ResrcDescriptor};
 
 fn make_wstr(slt: &mut Vec<u8>, string: &str) {
     let wide_string: Vec<u16> = string.encode_utf16().collect();
@@ -155,9 +155,14 @@ fn make_slot_struct(slt: &mut Vec<u8>, rev: &ResrcRevision, slot_info: &SlotInfo
 
     // labels
     if version >= 0x33c {
-        slt.write_u32::<BigEndian>(slot_info.author_labels.len() as u32).unwrap();
+        let mut labels = slot_info.author_labels.clone();
+        if let GameVersion::Lbp2 = rev.get_gameversion() {
+            labels.retain(|key| LBP2_LABELS.contains(key));
+        }
 
-        for (i, key_id) in slot_info.author_labels.iter().enumerate() {
+        slt.write_u32::<BigEndian>(labels.len() as u32).unwrap();
+
+        for (i, key_id) in labels.iter().enumerate() {
             slt.write_u32::<BigEndian>(*key_id).unwrap();
             slt.write_u32::<BigEndian>(i as u32).unwrap();
         }
