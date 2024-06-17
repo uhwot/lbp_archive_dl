@@ -79,7 +79,7 @@ dependencies = [
 
 [[package]]
 name = "archive_dl"
-version = "2.3.0"
+version = "2.4.0"
 dependencies = [
  "aes",
  "async-recursion",
