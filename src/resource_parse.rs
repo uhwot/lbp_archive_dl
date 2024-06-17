@@ -1,6 +1,7 @@
-use std::io::{Cursor, Read, Seek, SeekFrom};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{BigEndian, ReadBytesExt};
+use miniz_oxide::inflate::core::{decompress, DecompressorOxide};
 
 use crate::db::GameVersion;
 
@@ -48,6 +49,9 @@ pub enum ResrcMethod {
         is_encrypted: bool,
         revision: ResrcRevision,
         dependencies: Vec<ResrcDependency>,
+    },
+    Texture {
+        dds_data: Vec<u8>,
     },
 }
 
@@ -101,7 +105,7 @@ impl ResrcDependency {
 }
 
 impl ResrcId {
-    pub fn new(res: &[u8]) -> Self {
+    pub fn new(res: &[u8], parse_texture: bool) -> Self {
         let mut res = Cursor::new(res);
 
         let mut resrc_type = [0u8; 3];
@@ -130,6 +134,58 @@ impl ResrcId {
                     is_encrypted: method == b'e',
                     revision: rev,
                     dependencies,
+                }
+            },
+            b' ' => {
+                // decompressing texture data is only useful here for parsing the level icon,
+                // otherwise we just skip decompression entirely
+                if !parse_texture {
+                    ResrcMethod::Null
+                } else {
+                    assert!(resrc_type == *b"TEX");
+
+                    res.seek(SeekFrom::Current(2)).unwrap(); // unused i16, always 0x0001
+                    let num_chunks = res.read_u16::<BigEndian>().unwrap();
+
+                    let mut chunk_infos = Vec::with_capacity(num_chunks as usize);
+                    let mut total_decompressed_size = 0;
+
+                    #[derive(Debug)]
+                    struct ChunkInfo {
+                        compressed_size: u16,
+                        decompressed_size: u16,
+                    }
+
+                    for _ in 0..num_chunks {
+                        let info = ChunkInfo {
+                            compressed_size: res.read_u16::<BigEndian>().unwrap(),
+                            decompressed_size: res.read_u16::<BigEndian>().unwrap(),
+                        };
+                        total_decompressed_size += info.decompressed_size as usize;
+                        chunk_infos.push(info);
+                    }
+
+                    let mut final_data = vec![0u8; total_decompressed_size];
+
+                    let mut decompressor = DecompressorOxide::new();
+
+                    let mut final_pos = 0;
+                    for info in chunk_infos {
+                        let mut deflated_data = vec![0u8; info.compressed_size as usize];
+                        res.read_exact(&mut deflated_data[..info.compressed_size as usize]).unwrap();
+
+                        if info.compressed_size == info.decompressed_size {
+                            (&mut final_data[final_pos..]).write_all(&deflated_data).unwrap();
+                        } else {
+                            let flags = 0x1 /* parse zlib header */ + 0x4 /* non-wrapping output buf */;
+                            decompress(&mut decompressor, &deflated_data, &mut final_data, final_pos, flags);
+                            decompressor.init();
+                        }
+
+                        final_pos += info.decompressed_size as usize;
+                    }
+
+                    ResrcMethod::Texture { dds_data: final_data }
                 }
             },
             _ => { ResrcMethod::Null },

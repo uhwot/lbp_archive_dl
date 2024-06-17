@@ -20,3 +20,5 @@ bitvec = "1.0"
 clap = { version = "4.5", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
+miniz_oxide = "0.7"
+image = { version = "0.25", default-features = false, features = ["rayon", "dds", "png"] }

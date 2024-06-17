@@ -1,6 +1,7 @@
-use std::{collections::BTreeMap, fs::{self, File}, io::{stdout, Write}, path::Path};
+use std::{collections::BTreeMap, fs, io::{stdout, Write}};
 use clap::{Parser, Subcommand};
 use config::Config;
+use icon::make_icon;
 use reqwest::ClientBuilder;
 use sha1::{Digest, Sha1};
 
@@ -11,6 +12,7 @@ mod xxtea;
 mod labels;
 mod db;
 mod config;
+mod icon;
 
 use resource_dl::get_resource;
 use serializers::lbp::make_slotlist;
@@ -41,11 +43,6 @@ enum Commands {
     }
 }
 
-fn make_icon(bkp_path: &Path) {
-    let mut icon_file = File::create(bkp_path.join("ICON0.PNG")).unwrap();
-    icon_file.write_all(include_bytes!("assets/placeholder_icon.png")).unwrap();
-}
-
 async fn dl_as_backup(level_id: i64, config: Config) {
     let slot_info = get_slot_info(level_id, &config.database_path);
 
@@ -67,11 +64,14 @@ async fn dl_as_backup(level_id: i64, config: Config) {
     print!("Downloading resources");
     stdout().flush().unwrap();
 
+    let mut icon_sha1 = None;
+
     let mut dl_count = 0;
     let mut fail_count = 0;
     get_resource(&slot_info.root_level, &mut client, &mut hashes, &mut dl_count, &mut fail_count, &config.download_server).await;
     if let ResrcDescriptor::Sha1(icon_hash) = slot_info.icon {
         get_resource(&icon_hash, &mut client, &mut hashes, &mut dl_count, &mut fail_count, &config.download_server).await;
+        icon_sha1 = Some(icon_hash);
     }
 
     if hashes.get(&slot_info.root_level).unwrap().is_none() {
@@ -82,7 +82,7 @@ async fn dl_as_backup(level_id: i64, config: Config) {
     println!("{dl_count} resources downloaded, {fail_count} failed");
 
     let root_resrc = hashes.get(&slot_info.root_level).unwrap().as_deref().unwrap();
-    let root_resrc = ResrcId::new(root_resrc);
+    let root_resrc = ResrcId::new(root_resrc, false);
 
     let mut revision = if let ResrcMethod::Binary { revision, .. } = root_resrc.method {
         revision
@@ -118,6 +118,8 @@ async fn dl_as_backup(level_id: i64, config: Config) {
     let slt_hash = Sha1::digest(&slt).into();
     hashes.insert(slt_hash, Some(slt));
 
+    make_icon(&bkp_path, icon_sha1, &mut hashes);
+
     make_savearchive(&revision, slt_hash, hashes, &bkp_path);
     let sfo = make_sfo(&slot_info, &bkp_name, &bkp_path, &gameversion);
 
@@ -126,8 +128,6 @@ async fn dl_as_backup(level_id: i64, config: Config) {
         _ => 3,
     };
     make_pfd(pfd_version, sfo, &bkp_path);
-
-    make_icon(&bkp_path);
 
     println!("Backup written to {bkp_name}");
 }

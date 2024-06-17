@@ -28,7 +28,7 @@ pub async fn get_resource(
         None => return,
     };
 
-    let resrc_id = ResrcId::new(&resource);
+    let resrc_id = ResrcId::new(&resource, false);
 
     hashes.insert(*sha1, Some(resource));
 
