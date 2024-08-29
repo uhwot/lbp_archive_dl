@@ -3,7 +3,7 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use byteorder::{BigEndian, ReadBytesExt};
 use miniz_oxide::inflate::core::{decompress, DecompressorOxide};
 
-use crate::db::GameVersion;
+use crate::{db::GameVersion, gtf_texture::{CellGcmEnumForGtf, CellGcmTexture}};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct ResrcId {
@@ -51,7 +51,8 @@ pub enum ResrcMethod {
         dependencies: Vec<ResrcDependency>,
     },
     Texture {
-        dds_data: Vec<u8>,
+        data: Vec<u8>,
+        gcm_info: Option<CellGcmTexture>,
     },
 }
 
@@ -142,7 +143,28 @@ impl ResrcId {
                 if !parse_texture {
                     ResrcMethod::Null
                 } else {
-                    assert!(resrc_type == *b"TEX");
+                    assert!([*b"TEX", *b"GTF"].contains(&resrc_type));
+
+                    let mut gcm = None;
+
+                    if resrc_type != *b"TEX" {
+                        gcm = Some(CellGcmTexture {
+                            format: CellGcmEnumForGtf::from_u8(res.read_u8().unwrap()),
+                            mipmap: res.read_u8().unwrap(),
+                            dimension: res.read_u8().unwrap(),
+                            cubemap: res.read_u8().unwrap(),
+                            remap: res.read_u32::<BigEndian>().unwrap(),
+                            width: res.read_u16::<BigEndian>().unwrap(),
+                            height: res.read_u16::<BigEndian>().unwrap(),
+                            depth: res.read_u16::<BigEndian>().unwrap(),
+                            location: res.read_u8().unwrap(),
+
+                            flags: res.read_u8().unwrap(),
+
+                            pitch: res.read_u32::<BigEndian>().unwrap(),
+                            offset: res.read_u32::<BigEndian>().unwrap(),
+                        });
+                    }
 
                     res.seek(SeekFrom::Current(2)).unwrap(); // unused i16, always 0x0001
                     let num_chunks = res.read_u16::<BigEndian>().unwrap();
@@ -185,7 +207,7 @@ impl ResrcId {
                         final_pos += info.decompressed_size as usize;
                     }
 
-                    ResrcMethod::Texture { dds_data: final_data }
+                    ResrcMethod::Texture { data: final_data, gcm_info: gcm }
                 }
             },
             _ => { ResrcMethod::Null },

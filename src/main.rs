@@ -13,6 +13,7 @@ mod labels;
 mod db;
 mod config;
 mod icon;
+mod gtf_texture;
 
 use resource_dl::get_resource;
 use serializers::lbp::make_slotlist;

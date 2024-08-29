@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, fs::File, io::{Cursor, Write}, path::Path};
 
 use image::{imageops::FilterType, io::Reader as ImageReader, DynamicImage, ImageBuffer, ImageFormat, Rgba};
 
-use crate::resource_parse::{ResrcId, ResrcMethod};
+use crate::{gtf_texture::make_dds_header, resource_parse::{ResrcId, ResrcMethod}};
 
 // code epically stolen from here :D
 // https://github.com/image-rs/image/issues/1701#issuecomment-1100276695
@@ -35,24 +35,34 @@ fn img_resize_with_padding(img: DynamicImage) -> ImageBuffer<Rgba<u8>, Vec<u8>> 
 }
 
 pub fn make_icon(bkp_path: &Path, icon_hash: Option<[u8; 20]>, hashes: &mut BTreeMap<[u8; 20], Option<Vec<u8>>>) {
-    let mut icon_dds = None;
-    
+    let mut icon_data = None;
+    let mut icon_gcm_info = None;
+
     if let Some(hash) = icon_hash {
         let icon_resrc = hashes.get(&hash).unwrap();
         if let Some(resrc) = icon_resrc {
             let icon_resrc_id = ResrcId::new(resrc, true);
-            if let ResrcMethod::Texture { dds_data } = icon_resrc_id.method {
-                icon_dds = Some(dds_data);
+            if let ResrcMethod::Texture { data, gcm_info } = icon_resrc_id.method {
+                icon_data = Some(data);
+                icon_gcm_info = gcm_info;
             }
         }
     }
 
     let mut icon_file = File::create(bkp_path.join("ICON0.PNG")).unwrap();
 
-    match icon_dds {
+    match icon_data {
         None => icon_file.write_all(include_bytes!("assets/placeholder_icon.png")).unwrap(),
-        Some(dds) => {
-            let mut img = ImageReader::new(Cursor::new(dds));
+        Some(mut data) => {
+            if let Some(gcm_info) = icon_gcm_info {
+                let mut dds = Vec::with_capacity(0x80 + data.len());
+                make_dds_header(&mut dds, &gcm_info);
+                dds.write_all(&data).unwrap();
+
+                data = dds;
+            }
+
+            let mut img = ImageReader::new(Cursor::new(data));
             img.set_format(ImageFormat::Dds);
             let img = img.decode().unwrap();
             let img = img_resize_with_padding(img);
