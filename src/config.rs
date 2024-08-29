@@ -37,7 +37,7 @@ impl Config {
         }
 
         let file = File::open(config_path).expect("Couldn't open config file");
-        let config: Self = serde_yaml::from_reader(file).expect("Couldn't parse config");
+        let config: Self = serde_yml::from_reader(file).expect("Couldn't parse config");
         config
     }
 }

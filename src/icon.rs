@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, fs::File, io::{Cursor, Write}, path::Path};
 
-use image::{imageops::FilterType, io::Reader as ImageReader, DynamicImage, ImageBuffer, ImageFormat, Rgba};
+use image::{imageops::FilterType, ImageReader, DynamicImage, ImageBuffer, ImageFormat, Rgba};
 
 use crate::{gtf_texture::make_dds_header, resource_parse::{ResrcId, ResrcMethod}};
 

@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-byteorder = "1.4"
+byteorder = "1.5"
 reqwest = "0.12"
 hex = "0.4"
-tokio = { version = "1.37", features = ["rt-multi-thread", "macros"] }
+tokio = { version = "1.39", features = ["rt-multi-thread", "macros"] }
 async-recursion = "1.1"
 sha1 = "0.10"
 sqlite = "0.36"
@@ -19,6 +19,6 @@ cbc = "0.1"
 bitvec = "1.0"
 clap = { version = "4.5", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
-serde_yaml = "0.9"
-miniz_oxide = "0.7"
+serde_yml = "0.0.12"
+miniz_oxide = "0.8"
 image = { version = "0.25", default-features = false, features = ["rayon", "dds", "png"] }
