@@ -40,7 +40,7 @@ impl Config {
         }
 
         let file = File::open(config_path).context("Couldn't open config file")?;
-        let config: Self = serde_yml::from_reader(file).context("Couldn't parse config")?;
+        let config: Self = serde_yaml::from_reader(file).context("Couldn't parse config")?;
         Ok(config)
     }
 }

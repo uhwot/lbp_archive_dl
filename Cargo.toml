@@ -18,7 +18,7 @@ cbc = "0.1"
 bitvec = "1.0"
 clap = { version = "4.5", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
-serde_yml = "0.0.12"
+serde_yaml = "0.9"
 miniz_oxide = "0.8"
 image = { version = "0.25", default-features = false, features = ["rayon", "dds", "png"] }
 futures-util = "0.3"
