@@ -2,6 +2,7 @@ use std::{collections::BTreeMap, fs::File, io::Write, path::Path};
 
 use byteorder::{BigEndian, WriteBytesExt};
 use hmac::Mac;
+use anyhow::Result;
 
 use crate::{resource_parse::ResrcRevision, serializers::HmacSha1, xxtea};
 
@@ -24,18 +25,19 @@ struct ArchiveEntry {
     size: u32,
 }
 
-pub fn make_savearchive(rev: &ResrcRevision, slt_hash: [u8; 20], hashes: BTreeMap<[u8; 20], Option<Vec<u8>>>, bkp_dir: &Path) {
+pub fn make_savearchive(
+    rev: &ResrcRevision,
+    slt_hash: [u8; 20],
+    hashes: BTreeMap<[u8; 20], Vec<u8>>,
+    bkp_dir: &Path
+) -> Result<()> {
     let mut arc = Vec::new();
     let mut entries = Vec::new();
 
     for (hash, resource) in hashes {
-        let resource = match resource {
-            Some(res) => res,
-            None => continue,
-        };
         let offset = arc.len();
 
-        arc.write_all(&resource).unwrap();
+        arc.write_all(&resource)?;
 
         entries.push(ArchiveEntry {
             sha1: hash,
@@ -50,36 +52,36 @@ pub fn make_savearchive(rev: &ResrcRevision, slt_hash: [u8; 20], hashes: BTreeMa
         pad = 4 - pad;
     }
 
-    arc.write_all(&b"\0".repeat(pad)).unwrap();
+    arc.write_all(&b"\0".repeat(pad))?;
 
     // save key
-    arc.write_u32::<BigEndian>(rev.head).unwrap();
-    arc.write_u16::<BigEndian>(rev.branch_id).unwrap();
-    arc.write_u16::<BigEndian>(rev.branch_revision).unwrap();
-    arc.write_u32::<BigEndian>(1).unwrap(); // localUserID
-    arc.write_all(&[0u8; 0x4 * 0xa]).unwrap(); // deprecated1 int[10]
-    arc.write_u32::<BigEndian>(0).unwrap(); // copied
-    arc.write_u32::<BigEndian>(29).unwrap(); // root type value, SLOT_LIST
-    arc.write_all(&[0u8; 0x4 * 0x3]).unwrap(); // deprecated2 int[3]
-    arc.write_all(&slt_hash).unwrap();
-    arc.write_all(&[0u8; 0x4 * 0xa]).unwrap(); // deprecated3 int[10]
+    arc.write_u32::<BigEndian>(rev.head)?;
+    arc.write_u16::<BigEndian>(rev.branch_id)?;
+    arc.write_u16::<BigEndian>(rev.branch_revision)?;
+    arc.write_u32::<BigEndian>(1)?; // localUserID
+    arc.write_all(&[0u8; 0x4 * 0xa])?; // deprecated1 int[10]
+    arc.write_u32::<BigEndian>(0)?; // copied
+    arc.write_u32::<BigEndian>(29)?; // root type value, SLOT_LIST
+    arc.write_all(&[0u8; 0x4 * 0x3])?; // deprecated2 int[3]
+    arc.write_all(&slt_hash)?;
+    arc.write_all(&[0u8; 0x4 * 0xa])?; // deprecated3 int[10]
 
     // fat entries
     for entry in &entries {
-        arc.write_all(&entry.sha1).unwrap();
-        arc.write_u32::<BigEndian>(entry.offset).unwrap();
-        arc.write_u32::<BigEndian>(entry.size).unwrap();
+        arc.write_all(&entry.sha1)?;
+        arc.write_u32::<BigEndian>(entry.offset)?;
+        arc.write_u32::<BigEndian>(entry.size)?;
     }
 
     // hashinate, to be written later
     let hashinate_offset = arc.len();
-    arc.write_all(&[0u8; 0x14]).unwrap();
-    arc.write_u32::<BigEndian>(entries.len() as u32).unwrap();
-    arc.write_all(b"FAR4").unwrap();
+    arc.write_all(&[0u8; 0x14])?;
+    arc.write_u32::<BigEndian>(entries.len() as u32)?;
+    arc.write_all(b"FAR4")?;
 
-    let mut mac = HmacSha1::new_from_slice(&HASHINATE_KEY).unwrap();
+    let mut mac = HmacSha1::new_from_slice(&HASHINATE_KEY)?;
     mac.update(&arc);
-    (&mut arc[hashinate_offset..hashinate_offset + 0x14]).write_all(&mac.finalize().into_bytes()).unwrap();
+    (&mut arc[hashinate_offset..hashinate_offset + 0x14]).write_all(&mac.finalize().into_bytes())?;
 
     let last_chunk_idx = arc.len() / CHUNK_SIZE;
     for (i, chunk) in arc.chunks_mut(CHUNK_SIZE).enumerate() {
@@ -89,7 +91,9 @@ pub fn make_savearchive(rev: &ResrcRevision, slt_hash: [u8; 20], hashes: BTreeMa
         }
         xxtea::encrypt(&TEA_KEY, &mut chunk[..xxtea_end]);
 
-        let mut file = File::create(bkp_dir.join(i.to_string())).unwrap();
-        file.write_all(chunk).unwrap();
+        let mut file = File::create(bkp_dir.join(i.to_string()))?;
+        file.write_all(chunk)?;
     }
+    
+    Ok(())
 }

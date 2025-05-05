@@ -14,7 +14,15 @@ backup_directory: "backups"
 # - "archive" (https://archive.org/details/@tamiya99)
 download_server: "refresh"
 
+# Maximum number of resources to be downloaded in parallel
+max_parallel_downloads: 10
+
 # Whether the backup version is determined based on the level format
 # For example, LBP1/2 levels in LBP3 format will be written as LBP3 backups
 # Set this to false only if you want to backport levels!
 fix_backup_version: true
+
+# Whether to save all LBP1/LBP2 levels as LBP3 backups
+# This is useful since LBP3 cannot read LBP1/LBP2 backups
+# Overrides the previous fix_backup_version setting
+force_lbp3_backups: false

@@ -1,6 +1,7 @@
 use std::io::Write;
 
 use byteorder::{LittleEndian, WriteBytesExt};
+use anyhow::{anyhow, Result};
 
 const DDS_HEADER_FLAGS_TEXTURE: u32 = 0x00001007;
 const DDS_HEADER_FLAGS_MIPMAP: u32 = 0x00020000;
@@ -53,8 +54,8 @@ pub enum CellGcmEnumForGtf {
 }
 
 impl CellGcmEnumForGtf {
-    pub fn from_u8(n: u8) -> Self {
-        match n {
+    pub fn from_u8(n: u8) -> Result<Self> {
+        Ok(match n {
             0x81 => Self::B8,
             0x82 => Self::A1R5G5B5,
             0x83 => Self::A4R4G4B4,
@@ -65,11 +66,11 @@ impl CellGcmEnumForGtf {
             0x88 => Self::DXT5,
             0x8b => Self::G8B8,
             0x8f => Self::R5G5B5,
-            _ => panic!("Invalid GTF texture pixel format"),
-        }
+            _ => return Err(anyhow!("Invalid GTF texture pixel format")),
+        })
     }
-    fn dds_pixelformat(&self) -> [u32; 8] {
-        match self {
+    fn dds_pixelformat(&self) -> Result<[u32; 8]> {
+        Ok(match self {
             Self::B8 =>       [0x20, DDS_LUMINANCE, 0, 8, 0, 0, 0x000000ff, 0],
             Self::A1R5G5B5 => [0x20, DDS_RGBA, 0, 16, 0x00007c00, 0x000003e0, 0x0000001f, 0x00008000],
             Self::A4R4G4B4 => [0x20, DDS_RGBA, 0, 16, 0x00000f00, 0x000000f0, 0x0000000f, 0x0000f000],
@@ -78,32 +79,32 @@ impl CellGcmEnumForGtf {
             Self::DXT1 =>     [0x20, DDS_FOURCC, 0x31545844, 0, 0, 0, 0, 0],
             Self::DXT3 =>     [0x20, DDS_FOURCC, 0x33545844, 0, 0, 0, 0, 0],
             Self::DXT5 =>     [0x20, DDS_FOURCC, 0x35545844, 0, 0, 0, 0, 0],
-            _ => panic!("Unimplemented DDS pixel format type"),
-        }
+            _ => return Err(anyhow!("Unimplemented DDS pixel format type")),
+        })
     }
 }
 
 // DDS header structure docs:
 // https://docs.microsoft.com/en-us/windows/win32/direct3ddds/dds-header
-pub fn make_dds_header(dds: &mut Vec<u8>, gcm: &CellGcmTexture) {
-    dds.write_all(b"DDS ").unwrap();
-    dds.write_u32::<LittleEndian>(0x7c).unwrap(); // dwSize
+pub fn make_dds_header(dds: &mut Vec<u8>, gcm: &CellGcmTexture) -> Result<()> {
+    dds.write_all(b"DDS ")?;
+    dds.write_u32::<LittleEndian>(0x7c)?; // dwSize
     
     let mut flags = DDS_HEADER_FLAGS_TEXTURE;
     if gcm.mipmap != 1 { flags |= DDS_HEADER_FLAGS_MIPMAP }
-    dds.write_u32::<LittleEndian>(flags).unwrap();
+    dds.write_u32::<LittleEndian>(flags)?;
 
-    dds.write_u32::<LittleEndian>(gcm.height.into()).unwrap();
-    dds.write_u32::<LittleEndian>(gcm.width.into()).unwrap();
-    dds.write_u32::<LittleEndian>(0).unwrap(); // dwPitchOrLinearSize
-    dds.write_u32::<LittleEndian>(0).unwrap(); // dwDepth
-    dds.write_u32::<LittleEndian>(gcm.mipmap.into()).unwrap();
+    dds.write_u32::<LittleEndian>(gcm.height.into())?;
+    dds.write_u32::<LittleEndian>(gcm.width.into())?;
+    dds.write_u32::<LittleEndian>(0)?; // dwPitchOrLinearSize
+    dds.write_u32::<LittleEndian>(0)?; // dwDepth
+    dds.write_u32::<LittleEndian>(gcm.mipmap.into())?;
 
     // dwReserved[11]
-    dds.write_all(&[0u8; 11 * 4]).unwrap();
+    dds.write_all(&[0u8; 11 * 4])?;
 
-    for value in gcm.format.dds_pixelformat() {
-        dds.write_u32::<LittleEndian>(value).unwrap();
+    for value in gcm.format.dds_pixelformat()? {
+        dds.write_u32::<LittleEndian>(value)?;
     }
 
     let mut caps1 = DDS_SURFACE_FLAGS_TEXTURE;
@@ -129,9 +130,11 @@ pub fn make_dds_header(dds: &mut Vec<u8>, gcm: &CellGcmTexture) {
         caps2 |= DDS_SURFACE_FLAGS_CUBEMAP_NEGATIVEZ;
     }
 
-    dds.write_u32::<LittleEndian>(caps1).unwrap();
-    dds.write_u32::<LittleEndian>(caps2).unwrap();
+    dds.write_u32::<LittleEndian>(caps1)?;
+    dds.write_u32::<LittleEndian>(caps2)?;
 
     // dwReserved
-    dds.write_all(&[0u8; 3 * 4]).unwrap();
+    dds.write_all(&[0u8; 3 * 4])?;
+    
+    Ok(())
 }

@@ -11,8 +11,8 @@ fn as_u32_slice_mut(x: &mut [u8]) -> &mut [u32] {
 }
 
 pub fn encrypt(key: &[u32], block: &mut [u8]) {
-    assert!(key.len() == 4);
-    assert!((block.len() & 3) == 0);
+    assert_eq!(key.len(), 4);
+    assert_eq!(block.len() & 3, 0);
 
     let block = as_u32_slice_mut(block);
 

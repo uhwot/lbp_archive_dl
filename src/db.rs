@@ -2,6 +2,7 @@ use std::path::Path;
 
 use bitvec::{order::Lsb0, view::BitView};
 use sqlite::State;
+use anyhow::{anyhow, Result};
 
 use crate::{labels::LABEL_LAMS_KEY_IDS, resource_parse::ResrcRevision, ResrcDescriptor};
 
@@ -81,55 +82,55 @@ pub struct SlotInfo {
     pub is_adventure_planet: bool,
 }
 
-pub fn get_slot_info(id: i64, db_path: &Path) -> SlotInfo {
+pub fn get_slot_info(id: i64, db_path: &Path) -> Result<SlotInfo> {
     if !db_path.exists() {
-        panic!("Database file is missing, download it or check if the path in config.yml is correct");
+        return Err(anyhow!("Database file is missing, download it or check if the path in config.yml is correct"));
     }
 
-    let db = sqlite::open(db_path).unwrap();
+    let db = sqlite::open(db_path)?;
 
     let query = "SELECT name, description, npHandle, rootLevel, icon, game, initiallyLocked,
         isSubLevel, background, shareable, authorLabels, leveltype, minPlayers, maxPlayers, isAdventurePlanet
         FROM slot WHERE id = ?";
-    let mut statement = db.prepare(query).unwrap();
-    statement.bind((1, id)).unwrap();
+    let mut statement = db.prepare(query)?;
+    statement.bind((1, id))?;
 
-    match statement.next().unwrap() {
-        State::Done => panic!("Level not found"),
+    match statement.next()? {
+        State::Done => return Err(anyhow!("Level not found")),
         State::Row => {},
     }
 
     let slot_info = SlotInfo {
-        name: statement.read::<Option<String>, _>("name").unwrap().unwrap_or_default(),
-        description: statement.read::<Option<String>, _>("description").unwrap().unwrap_or_default(),
-        np_handle: statement.read::<String, _>("npHandle").unwrap(),
-        root_level: statement.read::<Vec<u8>, _>("rootLevel").unwrap().try_into().unwrap(),
+        name: statement.read::<Option<String>, _>("name")?.unwrap_or_default(),
+        description: statement.read::<Option<String>, _>("description")?.unwrap_or_default(),
+        np_handle: statement.read::<String, _>("npHandle")?,
+        root_level: statement.read::<Vec<u8>, _>("rootLevel")?.try_into().map_err(|_| anyhow!("invalid rootLevel in db"))?,
         icon: {
-            let bytes = statement.read::<Vec<u8>, _>("icon").unwrap();
+            let bytes = statement.read::<Vec<u8>, _>("icon")?;
             match bytes.len() {
-                20 => ResrcDescriptor::Sha1(bytes.try_into().unwrap()),
+                20 => ResrcDescriptor::Sha1(bytes.try_into().map_err(|_| anyhow!("invalid icon in db"))?),
                 4 => {
-                    let bytes = bytes.try_into().unwrap();
+                    let bytes = bytes.try_into().map_err(|_| anyhow!("invalid icon in db"))?;
                     ResrcDescriptor::Guid(u32::from_be_bytes(bytes))
                 },
-                _ => panic!("invalid icon in db"),
+                _ => return Err(anyhow!("invalid icon in db")),
             }
         },
         game: {
-            let int = statement.read::<i64, _>("game").unwrap();
+            let int = statement.read::<i64, _>("game")?;
             match int {
                 0 => GameVersion::Lbp1,
                 1 => GameVersion::Lbp2,
                 2 => GameVersion::Lbp3,
-                _ => panic!("invalid game version in db"),
+                _ => return Err(anyhow!("invalid game version in db")),
             }
         },
-        initially_locked: statement.read::<i64, _>("initiallyLocked").unwrap() == 1,
-        is_sub_level: statement.read::<i64, _>("isSubLevel").unwrap() == 1,
-        background_guid: statement.read::<Option<i64>, _>("background").unwrap().map(|i| i as u32),
-        shareable: statement.read::<i64, _>("shareable").unwrap() == 1,
+        initially_locked: statement.read::<i64, _>("initiallyLocked")? == 1,
+        is_sub_level: statement.read::<i64, _>("isSubLevel")? == 1,
+        background_guid: statement.read::<Option<i64>, _>("background")?.map(|i| i as u32),
+        shareable: statement.read::<i64, _>("shareable")? == 1,
         author_labels: {
-            let bytes = statement.read::<Option<Vec<u8>>, _>("authorLabels").unwrap();
+            let bytes = statement.read::<Option<Vec<u8>>, _>("authorLabels")?;
             let mut labels = Vec::with_capacity(5);
 
             if let Some(arr) = &bytes {
@@ -144,19 +145,19 @@ pub fn get_slot_info(id: i64, db_path: &Path) -> SlotInfo {
             labels
         },
         leveltype: {
-            let string = statement.read::<Option<String>, _>("leveltype").unwrap();
+            let string = statement.read::<Option<String>, _>("leveltype")?;
             match string.as_deref() {
                 None => LevelType::Cooperative,
                 Some("versus") => LevelType::Versus,
                 Some("cutscene") => LevelType::Cutscene,
-                _ => panic!("invalid leveltype in db"),
+                _ => return Err(anyhow!("invalid leveltype in db")),
             }
         },
-        min_players: statement.read::<Option<i64>, _>("minPlayers").unwrap().map(|i| i as u8),
-        max_players: statement.read::<Option<i64>, _>("maxPlayers").unwrap().map(|i| i as u8),
-        is_adventure_planet: statement.read::<i64, _>("isAdventurePlanet").unwrap() == 1,
+        min_players: statement.read::<Option<i64>, _>("minPlayers")?.map(|i| i as u8),
+        max_players: statement.read::<Option<i64>, _>("maxPlayers")?.map(|i| i as u8),
+        is_adventure_planet: statement.read::<i64, _>("isAdventurePlanet")? == 1,
     };
     assert!(matches!(statement.next(), Ok(State::Done)));
 
-    slot_info
+    Ok(slot_info)
 }

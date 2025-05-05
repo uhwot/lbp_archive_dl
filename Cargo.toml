@@ -1,7 +1,7 @@
 [package]
 name = "archive_dl"
 version = "2.5.0"
-edition = "2021"
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -9,10 +9,9 @@ edition = "2021"
 byteorder = "1.5"
 reqwest = "0.12"
 hex = "0.4"
-tokio = { version = "1.39", features = ["rt-multi-thread", "macros"] }
-async-recursion = "1.1"
+tokio = { version = "1.43", features = ["rt-multi-thread", "macros"] }
 sha1 = "0.10"
-sqlite = "0.36"
+sqlite = "0.37"
 hmac = "0.12"
 aes = "0.8"
 cbc = "0.1"
@@ -22,3 +21,6 @@ serde = { version = "1.0", features = ["derive"] }
 serde_yml = "0.0.12"
 miniz_oxide = "0.8"
 image = { version = "0.25", default-features = false, features = ["rayon", "dds", "png"] }
+futures-util = "0.3"
+anyhow = "1.0"
+thiserror = "2.0"

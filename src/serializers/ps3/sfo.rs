@@ -1,8 +1,9 @@
 use std::{fs::File, io::Write, path::Path};
 
-use byteorder::{LittleEndian, WriteBytesExt};
-
 use crate::db::{GameVersion, SlotInfo};
+
+use byteorder::{LittleEndian, WriteBytesExt};
+use anyhow::Result;
 
 enum DataFormat<'a> {
     Array(u32, &'a [u8]),
@@ -10,7 +11,7 @@ enum DataFormat<'a> {
     Integer(u32),
 }
 
-impl<'a> DataFormat<'a> {
+impl DataFormat<'_> {
     fn get_fmt_id(&self) -> [u8; 2] {
         match self {
             Self::Array(..) => [0x04, 0x00],
@@ -52,7 +53,7 @@ struct IndexEntry<'a> {
 
 const ENTRIES_LEN: usize = 10;
 
-pub fn make_sfo(slot_info: &SlotInfo, bkp_name: &str, dir: &Path, gamever: &GameVersion) -> Vec<u8> {
+pub fn make_sfo(slot_info: &SlotInfo, bkp_name: &str, dir: &Path, gamever: &GameVersion) -> Result<Vec<u8>> {
     let title = match slot_info.is_adventure_planet {
         false => format!("{} Dry Archive Level Backup", gamever.get_title()),
         true => format!("{} Dry Archive Adventure Backup", gamever.get_title()),
@@ -108,8 +109,8 @@ pub fn make_sfo(slot_info: &SlotInfo, bkp_name: &str, dir: &Path, gamever: &Game
 
     for (i, entry) in entries.iter().enumerate() {
         key_offsets[i] = key_table.len() as u16;
-        key_table.write_all(entry.key.as_bytes()).unwrap();
-        key_table.write_u8(0).unwrap(); // null terminator
+        key_table.write_all(entry.key.as_bytes())?;
+        key_table.write_u8(0)?; // null terminator
     }
 
     let mut data_info = [(0, 0); ENTRIES_LEN];
@@ -119,11 +120,11 @@ pub fn make_sfo(slot_info: &SlotInfo, bkp_name: &str, dir: &Path, gamever: &Game
         let size = data.len() as u32;
         let offset = data_table.len() as u32;
 
-        data_table.write_all(&data).unwrap();
+        data_table.write_all(&data)?;
         
         let pad = entry.data.get_max_size() - size;
         if pad != 0 {
-            data_table.write_all(&b"\0".repeat(pad as usize)).unwrap();
+            data_table.write_all(&b"\0".repeat(pad as usize))?;
         }
 
         data_info[i] = (size, offset);
@@ -131,39 +132,39 @@ pub fn make_sfo(slot_info: &SlotInfo, bkp_name: &str, dir: &Path, gamever: &Game
 
     let mut sfo = Vec::new();
 
-    sfo.write_all(b"\0PSF").unwrap();
-    sfo.write_all(&[0x01, 0x01, 0x00, 0x00]).unwrap(); // version 1.1
-    sfo.write_u32::<LittleEndian>(0).unwrap(); // key table offset, to be written later
-    sfo.write_u32::<LittleEndian>(0).unwrap(); // data table offset, to be written later
-    sfo.write_u32::<LittleEndian>(ENTRIES_LEN as u32).unwrap();
+    sfo.write_all(b"\0PSF")?;
+    sfo.write_all(&[0x01, 0x01, 0x00, 0x00])?; // version 1.1
+    sfo.write_u32::<LittleEndian>(0)?; // key table offset, to be written later
+    sfo.write_u32::<LittleEndian>(0)?; // data table offset, to be written later
+    sfo.write_u32::<LittleEndian>(ENTRIES_LEN as u32)?;
 
     // index table
     for (i, entry) in entries.iter().enumerate() {
-        sfo.write_u16::<LittleEndian>(key_offsets[i]).unwrap();
-        sfo.write_all(&entry.data.get_fmt_id()).unwrap();
-        sfo.write_u32::<LittleEndian>(data_info[i].0).unwrap(); // data size
-        sfo.write_u32::<LittleEndian>(entry.data.get_max_size()).unwrap();
-        sfo.write_u32::<LittleEndian>(data_info[i].1).unwrap(); // data offset
+        sfo.write_u16::<LittleEndian>(key_offsets[i])?;
+        sfo.write_all(&entry.data.get_fmt_id())?;
+        sfo.write_u32::<LittleEndian>(data_info[i].0)?; // data size
+        sfo.write_u32::<LittleEndian>(entry.data.get_max_size())?;
+        sfo.write_u32::<LittleEndian>(data_info[i].1)?; // data offset
     }
 
     let key_table_offset = sfo.len();
-    sfo.write_all(&key_table).unwrap();
+    sfo.write_all(&key_table)?;
 
     // align to 4 byte boundary
     let mut pad = sfo.len() % 4;
     if pad != 0 {
         pad = 4 - pad;
     }
-    sfo.write_all(&b"\0".repeat(pad)).unwrap();
+    sfo.write_all(&b"\0".repeat(pad))?;
 
     let data_table_offset = sfo.len();
-    sfo.write_all(&data_table).unwrap();
+    sfo.write_all(&data_table)?;
 
-    (&mut sfo[8..12]).write_u32::<LittleEndian>(key_table_offset as u32).unwrap();
-    (&mut sfo[12..16]).write_u32::<LittleEndian>(data_table_offset as u32).unwrap();
+    (&mut sfo[8..12]).write_u32::<LittleEndian>(key_table_offset as u32)?;
+    (&mut sfo[12..16]).write_u32::<LittleEndian>(data_table_offset as u32)?;
 
-    let mut file = File::create(dir.join("PARAM.SFO")).unwrap();
-    file.write_all(&sfo).unwrap();
+    let mut file = File::create(dir.join("PARAM.SFO"))?;
+    file.write_all(&sfo)?;
 
-    sfo
+    Ok(sfo)
 }
