@@ -10,9 +10,9 @@ backup_directory: "backups"
 
 # Server where level resources are downloaded from
 # Values are:
-# - "refresh" (https://lbp.littlebigrefresh.com/)
+# - "bonsai" (https://lbp.lbpbonsai.com/)
 # - "archive" (https://archive.org/details/@tamiya99)
-download_server: "refresh"
+download_server: "bonsai"
 
 # Maximum number of resources to be downloaded in parallel
 max_parallel_downloads: 10
