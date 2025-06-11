@@ -15,6 +15,7 @@ backup_directory: "backups"
 download_server: "bonsai"
 
 # Maximum number of resources to be downloaded in parallel
+# Cannot be higher than 10
 max_parallel_downloads: 10
 
 # Whether the backup version is determined based on the level format
@@ -26,3 +27,7 @@ fix_backup_version: true
 # This is useful since LBP3 cannot read LBP1/LBP2 backups
 # Overrides the previous fix_backup_version setting
 force_lbp3_backups: false
+
+# Whether to make LBP2 beta levels importable in retail builds
+# Enable this if you see the error "Save Data Is Corrupt"
+lbp2_beta_to_retail: true

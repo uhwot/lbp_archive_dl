@@ -19,7 +19,7 @@ use serializers::lbp::{make_slotlist, make_savearchive};
 use serializers::ps3::{make_sfo, make_pfd};
 use db::{get_slot_info, GameVersion};
 use resource_parse::{ResrcDescriptor, ResrcData, ResrcMethod};
-use crate::resource_dl::{download_level, DownloadResult};
+use crate::{resource_dl::{download_level, DownloadResult}, resource_parse::ResrcRevision};
 
 static USER_AGENT: &str = concat!(
     "lbp_archive_dl/", env!("CARGO_PKG_VERSION"),
@@ -48,9 +48,15 @@ enum Commands {
 async fn dl_as_backup(level_id: i64, config: Config, force_lbp3: bool) -> Result<()> {
     let slot_info = get_slot_info(level_id, &config.database_path)?;
 
+    let display_name = if !slot_info.name.is_empty() {
+        slot_info.name.as_str()
+    } else {
+        "Unnamed Level"
+    };
+
     println!("Level found!");
-    println!("Name: {}", &slot_info.name);
-    println!("Creator: {}", &slot_info.np_handle);
+    println!("Name: {display_name}");
+    println!("Creator: {}", slot_info.np_handle);
     println!("Game: {}", slot_info.game.get_short_title());
 
     let mut max_parallel_downloads = config.max_parallel_downloads;
@@ -115,6 +121,17 @@ async fn dl_as_backup(level_id: i64, config: Config, force_lbp3: bool) -> Result
             gameversion = slot_info.game;
             revision = gameversion.get_latest_revision();
         }
+    } else if gameversion == GameVersion::Lbp2 && revision.head < 0x3b6 {
+        if config.lbp2_beta_to_retail {
+            // update revision so that fromProductionBuild is present in RSlotList
+            revision = ResrcRevision {
+                head: 0x3b6,
+                branch_id: 0x0,
+                branch_revision: 0x0,
+            }
+        } else {
+            eprintln!("WARNING: This is an LBP2 beta level, enable lbp2_beta_to_retail if you're importing this on a retail build");
+        }
     }
 
     let slot_id_str = hex::encode_upper(u32::to_be_bytes(level_id as u32));
@@ -132,7 +149,7 @@ async fn dl_as_backup(level_id: i64, config: Config, force_lbp3: bool) -> Result
     make_icon(&bkp_path, icon_sha1, &mut resources)?;
 
     make_savearchive(&revision, slt_hash, resources, &bkp_path)?;
-    let sfo = make_sfo(&slot_info, &bkp_name, &bkp_path, &gameversion)?;
+    let sfo = make_sfo(&slot_info, display_name, &bkp_name, &bkp_path, &gameversion)?;
 
     let pfd_version = match gameversion {
         GameVersion::Lbp3 => 4,

@@ -53,12 +53,12 @@ struct IndexEntry<'a> {
 
 const ENTRIES_LEN: usize = 10;
 
-pub fn make_sfo(slot_info: &SlotInfo, bkp_name: &str, dir: &Path, gamever: &GameVersion) -> Result<Vec<u8>> {
+pub fn make_sfo(slot_info: &SlotInfo, display_name: &str, bkp_name: &str, dir: &Path, gamever: &GameVersion) -> Result<Vec<u8>> {
     let title = match slot_info.is_adventure_planet {
         false => format!("{} Dry Archive Level Backup", gamever.get_title()),
         true => format!("{} Dry Archive Adventure Backup", gamever.get_title()),
     };
-    let subtitle = format!("{} by {}", slot_info.name, slot_info.np_handle);
+    let subtitle = format!("{display_name} by {}", slot_info.np_handle);
 
     // these need to be in alphabetical order
     let entries: [IndexEntry; ENTRIES_LEN] = [

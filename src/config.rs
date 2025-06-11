@@ -28,6 +28,7 @@ pub struct Config {
     pub max_parallel_downloads: usize,
     pub fix_backup_version: bool,
     pub force_lbp3_backups: bool,
+    pub lbp2_beta_to_retail: bool,
 }
 
 impl Config {
