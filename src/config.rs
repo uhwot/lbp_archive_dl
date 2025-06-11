@@ -1,6 +1,8 @@
-use std::{fs::File, io::Write, path::{Path, PathBuf}};
+use std::{fs::{self, File}, io::Write, path::{Path, PathBuf}};
 use anyhow::{Context, Result};
 use serde::Deserialize;
+
+const DEFAULT_CONFIG: &[u8] = include_bytes!("assets/default_config.yml");
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -35,13 +37,31 @@ impl Config {
     pub fn read() -> Result<Self> {
         let config_path = Path::new("config.yml");
         if !config_path.exists() {
-            println!("config.yml is missing, writing default config");
+            eprintln!("WARNING: config.yml is missing, writing default config");
             let mut new_file = File::create(config_path)?;
-            new_file.write_all(include_bytes!("assets/default_config.yml"))?;
+            new_file.write_all(DEFAULT_CONFIG)?;
+            
+            let config: Self = serde_yaml::from_slice(DEFAULT_CONFIG)?;
+            return Ok(config)
         }
 
         let file = File::open(config_path).context("Couldn't open config file")?;
-        let config: Self = serde_yaml::from_reader(file).context("Couldn't parse config")?;
-        Ok(config)
+        let config: std::result::Result<Self, serde_yaml::Error> = serde_yaml::from_reader(file);
+        
+        match config {
+            Ok(config) => Ok(config),
+            Err(_) => {
+                eprintln!("WARNING: config.yml is from an old version or broken, writing default config");
+
+                fs::copy(config_path, "config_backup.yml").context("Couldn't backup old config")?;
+                eprintln!("WARNING: Old config written to config_backup.yml");
+
+                let mut new_file = File::create(config_path)?;
+                new_file.write_all(DEFAULT_CONFIG)?;
+
+                let config: Self = serde_yaml::from_slice(DEFAULT_CONFIG)?;
+                Ok(config)
+            }
+        }
     }
 }

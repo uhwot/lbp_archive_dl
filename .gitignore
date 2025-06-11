@@ -1,4 +1,5 @@
 /target
 /backups
 config.yml
+config_backup.yml
 dry.db
