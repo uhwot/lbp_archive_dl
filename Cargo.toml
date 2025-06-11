@@ -9,7 +9,7 @@ edition = "2024"
 byteorder = "1.5"
 reqwest = "0.12"
 hex = "0.4"
-tokio = { version = "1.43", features = ["rt-multi-thread", "macros"] }
+tokio = { version = "1.45", features = ["rt-multi-thread", "macros"] }
 sha1 = "0.10"
 sqlite = "0.37"
 hmac = "0.12"
