@@ -11,5 +11,5 @@ a somewhat crappy tool to download levels from [tamiya99's lbp level archive](ht
 
 # special thanks :)
 - [aidan](https://github.com/ennuo) for writing [cwlib](https://github.com/ennuo/toolkit/tree/main/lib/cwlib) and reverse-engineering LBP to make this all possible
-- [jvyden](https://github.com/jvyden) for hosting the archive assets on his [LittleBigRefresh](https://lbp.littlebigrefresh.com/) server, you should check it out :D
+- [jvyden](https://github.com/jvyden) for hosting the archive assets on [Bonsai](https://lbp.lbpbonsai.com/), you should check it out :D
 - [ugng](https://gitlab.com/osyu) for giving me PARAM.PFD serialization code in python, from which [this code](https://github.com/uhwot/lbp_archive_dl/blob/master/src/serializers/ps3/pfd.rs) is based off of
