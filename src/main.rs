@@ -18,8 +18,8 @@ mod gtf_texture;
 use serializers::lbp::{make_slotlist, make_savearchive};
 use serializers::ps3::{make_sfo, make_pfd};
 use db::{get_slot_info, GameVersion};
-use resource_parse::{ResrcDescriptor, ResrcData, ResrcMethod};
-use crate::{resource_dl::{download_level, DownloadResult}, resource_parse::ResrcRevision};
+use resource_parse::{ResrcDescriptor, ResrcData, ResrcMethod, ResrcRevision};
+use resource_dl::{download_level, DownloadResult};
 
 static USER_AGENT: &str = concat!(
     "lbp_archive_dl/", env!("CARGO_PKG_VERSION"),
