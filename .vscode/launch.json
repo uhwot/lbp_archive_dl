@@ -79,6 +79,24 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "big lbp3 adventure debug",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=archive_dl",
+                    "--package=archive_dl"
+                ],
+                "filter": {
+                    "name": "archive_dl",
+                    "kind": "bin"
+                }
+            },
+            "args": ["bkp", "48544656"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug unit tests in executable 'archive_dl'",
             "cargo": {
                 "args": [
