@@ -109,6 +109,8 @@ impl<'a> Downloader {
             return Ok(());
         }
 
+        self.set_downloaded(*sha1)?;
+
         let resource = self.download_resource(sha1).await;
         let resource = match resource {
             Ok(resource) => {
@@ -127,8 +129,6 @@ impl<'a> Downloader {
                 return Err(anyhow!(error));
             }
         };
-
-        self.set_downloaded(*sha1)?;
 
         let metadata = ResrcData::new(&resource, false)?;
 

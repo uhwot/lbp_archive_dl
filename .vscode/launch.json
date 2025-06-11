@@ -97,6 +97,24 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "duplicate resources debug",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=archive_dl",
+                    "--package=archive_dl"
+                ],
+                "filter": {
+                    "name": "archive_dl",
+                    "kind": "bin"
+                }
+            },
+            "args": ["bkp", "20021554"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug unit tests in executable 'archive_dl'",
             "cargo": {
                 "args": [
