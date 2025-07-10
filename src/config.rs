@@ -5,10 +5,11 @@ use serde::Deserialize;
 const DEFAULT_CONFIG: &[u8] = include_bytes!("assets/default_config.yml");
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "lowercase")]
 pub enum DownloadServer {
     Bonsai,
     Refresh,
+    LbpSearch,
     Archive,
 }
 
@@ -17,6 +18,7 @@ impl DownloadServer {
         let h = hex::encode(sha1);
         match self {
             Self::Bonsai | Self::Refresh => format!("https://lbp.lbpbonsai.com/api/v3/assets/{}/download", h),
+            Self::LbpSearch => format!("https://lbparchive.zaprit.fish/{}/{}/{}", &h[..2], &h[2..4], h),
             Self::Archive => format!("https://archive.org/download/dry23r{}/dry{}.zip/{}%2F{}%2F{}", h.chars().next().unwrap(), &h[..2], &h[..2], &h[2..4], h),
         }
     }

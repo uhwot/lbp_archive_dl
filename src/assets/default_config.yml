@@ -11,6 +11,7 @@ backup_directory: "backups"
 # Server where level resources are downloaded from
 # Values are:
 # - "bonsai" (https://lbp.lbpbonsai.com/)
+# - "lbpsearch" (https://zaprit.fish/)
 # - "archive" (https://archive.org/details/@tamiya99)
 download_server: "bonsai"
 
