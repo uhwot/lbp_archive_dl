@@ -5,7 +5,7 @@ use serde::Deserialize;
 const DEFAULT_CONFIG: &[u8] = include_bytes!("assets/default_config.yml");
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "lowercase")]
 pub enum DownloadServer {
     Bonsai,
     Refresh,
