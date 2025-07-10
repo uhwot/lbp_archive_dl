@@ -17,7 +17,7 @@ impl DownloadServer {
     pub fn get_url(&self, sha1: &[u8; 20]) -> String {
         let h = hex::encode(sha1);
         match self {
-            Self::Bonsai | Self::Refresh => format!("https://lbp.lbpbonsai.com/api/v3/assets/{}/download", h),
+            Self::Bonsai | Self::Refresh => format!("https://lbp.lbpbonsai.com/api/v3/assets/{h}/download"),
             Self::LbpSearch => format!("https://lbparchive.zaprit.fish/{}/{}/{}", &h[..2], &h[2..4], h),
             Self::Archive => format!("https://archive.org/download/dry23r{}/dry{}.zip/{}%2F{}%2F{}", h.chars().next().unwrap(), &h[..2], &h[..2], &h[2..4], h),
         }
